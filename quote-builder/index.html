@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quote Builder V2 — Hale's Heating & Cooling</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue:       #1B5EA8;
+    --blue-dark:  #0D3F75;
+    --blue-light: #E8F1FB;
+    --blue-mid:   #3A7FCC;
+    --accent:     #F5A623;
+    --bg:         #F4F6F9;
+    --surface:    #FFFFFF;
+    --border:     #D8DEE8;
+    --text:       #1A2030;
+    --muted:      #6B7691;
+  }
+  body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--blue-dark); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; border-bottom: 3px solid var(--accent); }
+  .logo-area { display: flex; align-items: center; gap: 14px; }
+  .logo-icon { height: 44px; display: flex; align-items: center; }
+  .logo-icon img { height: 44px; width: auto; display: block; }
+  .logo-text { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 0.02em; line-height: 1.1; }
+  .logo-text span { display: block; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); letter-spacing: 0.1em; text-transform: uppercase; }
+  .header-badge { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; }
+  main { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .page-title { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; color: var(--blue-dark); letter-spacing: 0.01em; margin-bottom: 4px; }
+  .page-sub { font-size: 14px; color: var(--muted); margin-bottom: 1.75rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 14px; }
+  .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .part-row { display: grid; grid-template-columns: 1fr 130px 32px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .col-header { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  input[type="text"], input[type="number"], select { height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text); background: #fff; width: 100%; transition: border-color 0.15s; }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus { outline: none; border-color: var(--blue-mid); box-shadow: 0 0 0 3px rgba(27,94,168,0.1); }
+  .rm-btn { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s, color 0.1s; }
+  .rm-btn:hover { background: #fef2f2; color: #c0392b; border-color: #f5c6c6; }
+  .add-btn { background: none; border: 1px dashed var(--blue-mid); border-radius: 8px; color: var(--blue); font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600; padding: 7px 16px; cursor: pointer; margin-top: 4px; transition: background 0.15s; }
+  .add-btn:hover { background: var(--blue-light); }
+  .inline-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .inline-row label { font-size: 13px; color: var(--muted); font-weight: 500; min-width: 160px; }
+  .inline-row input[type="number"] { width: 110px; }
+  .inline-row .unit { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .formula-steps { display: flex; flex-direction: column; }
+  .fstep { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border: 1px solid var(--border); background: var(--bg); font-size: 14px; }
+  .fstep:first-child { border-radius: 10px 10px 0 0; }
+  .fstep:last-child  { border-radius: 0 0 10px 10px; }
+  .fstep + .fstep    { border-top: none; }
+  .fstep .label { color: var(--muted); font-size: 13px; }
+  .fstep .val   { font-weight: 600; color: var(--text); font-size: 14px; }
+  .fstep.highlight { background: var(--blue-light); border-color: var(--blue-mid); }
+  .fstep.highlight .label { color: var(--blue); font-weight: 600; }
+  .fstep.highlight .val   { color: var(--blue-dark); font-size: 15px; }
+  .result-card { background: var(--blue-dark); border-radius: 14px; padding: 1.5rem; color: #fff; margin-top: 6px; }
+  .result-center { text-align: center; padding: 0.5rem 0 1rem; }
+  .result-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+  .result-total { font-family: 'Barlow Condensed', sans-serif; font-size: 52px; font-weight: 700; color: var(--accent); letter-spacing: 0.01em; line-height: 1; }
+  .actions { display: flex; gap: 10px; margin-top: 1rem; }
+  .btn-copy, .btn-reset, .btn-drive { flex: 1; padding: 10px; border-radius: 8px; font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; border: none; }
+  .btn-copy  { background: #fff; color: var(--blue-dark); }
+  .btn-copy:hover  { background: #f0f4ff; }
+  .btn-reset { background: #fff; color: var(--blue-dark); }
+  .btn-reset:hover { background: #f0f4ff; }
+  .btn-drive { background: #fff; color: var(--blue-dark); }
+  .btn-drive:hover { background: #f0f4ff; }
+  .btn-copy:active, .btn-reset:active, .btn-drive:active { transform: scale(0.98); }
+  .copied-msg { display: none; text-align: center; font-size: 13px; font-weight: 600; color: var(--accent); margin-top: 8px; }
+  .status-msg { display: none; text-align: center; font-size: 13px; font-weight: 600; margin-top: 8px; }
+  .status-msg.success { color: #4ade80; }
+  .status-msg.error   { color: #f87171; }
+  footer { text-align: center; font-size: 12px; color: var(--muted); padding: 2rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+  @media (max-width: 560px) {
+    .part-row { grid-template-columns: 1fr; }
+    .part-row input[type="number"] { width: 100%; }
+    .inline-row { flex-wrap: wrap; }
+    .inline-row label { min-width: 100%; margin-bottom: 2px; }
+    .inline-row input[type="number"] { width: 100px; }
+    .result-total { font-size: 40px; }
+  }
+  @media (max-width: 480px) {
+    .part-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .part-row:last-of-type { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-icon">
+      <img src="https://lirp.cdn-website.com/6d4013e5/dms3rep/multi/opt/image001-1920w.jpg" alt="Hale's Heating & Cooling" />
+    </div>
+    <div class="logo-text">
+      Hale's Heating &amp; Cooling
+      <span>Internal Tool</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Quote Builder</div>
+
+  <!-- JOB INFO -->
+  <div class="card">
+    <div class="card-title">Job Info</div>
+    <div class="inline-row">
+      <label>Technician name</label>
+      <input type="text" id="tech-name" placeholder="e.g. Justin" style="flex:1;" />
+    </div>
+    <div class="inline-row">
+      <label>Job address</label>
+      <input type="text" id="job-address" placeholder="e.g. 123 Main St, Athens, GA" style="flex:1;" />
+    </div>
+    <div class="inline-row">
+      <label>PO Number / Supplier</label>
+      <input type="text" id="po-number" placeholder="e.g. PO-1234 / Ferguson" style="flex:1;" />
+    </div>
+  </div>
+
+  <!-- MATERIALS -->
+  <div class="card">
+    <div class="card-title">Materials</div>
+    <div class="part-row" style="margin-bottom:6px;">
+      <div class="col-header">Description</div>
+      <div class="col-header">Cost</div>
+      <div></div>
+    </div>
+    <div id="parts-list"></div>
+    <button class="add-btn" onclick="addPart()">+ Add material</button>
+  </div>
+
+  <!-- LABOR -->
+  <div class="card">
+    <div class="card-title">Labor</div>
+    <div class="inline-row">
+      <label>Number of techs</label>
+      <input type="number" id="techs" value="1" min="1" step="1" oninput="calc()" />
+    </div>
+    <div class="inline-row">
+      <label>Hours on job</label>
+      <input type="number" id="labor-hrs" value="1" min="0" step="0.25" oninput="calc()" />
+      <span class="unit">hrs &times; $270/hr per tech</span>
+    </div>
+  </div>
+
+  <!-- REFRIGERANT -->
+  <div class="card">
+    <div class="card-title">Refrigerant</div>
+    <div class="inline-row">
+      <label>Type</label>
+      <select id="ref-type" onchange="toggleRefLbs()">
+        <option value="0">None</option>
+        <option value="110">R-407C &mdash; $110 / lb</option>
+        <option value="98">R-410A &mdash; $98 / lb</option>
+        <option value="135">R-454B &mdash; $135 / lb</option>
+      </select>
+    </div>
+    <div class="inline-row" id="ref-lbs-row" style="display:none;">
+      <label>Pounds</label>
+      <input type="number" id="ref-lbs" value="1" min="0" step="0.5" oninput="calc()" />
+      <span class="unit" id="ref-rate-label"></span>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN -->
+  <div class="card">
+    <div class="card-title">Breakdown</div>
+    <div class="formula-steps">
+      <div class="fstep"><span class="label">Material cost</span><span class="val" id="b-material">$0.00</span></div>
+      <div class="fstep"><span class="label">+ Tax (&times; 1.08)</span><span class="val" id="b-tax">$0.00</span></div>
+      <div class="fstep"><span class="label">Materials with margin (&divide; 0.70)</span><span class="val" id="b-subtotal">$0.00</span></div>
+      <div class="fstep"><span class="label" id="b-labor-label">+ Labor (1 tech &times; 1 hr &times; $270)</span><span class="val" id="b-labor">$0.00</span></div>
+      <div class="fstep" id="b-ref-row" style="display:none;"><span class="label" id="b-ref-label">+ Refrigerant</span><span class="val" id="b-ref">$0.00</span></div>
+      <div class="fstep highlight"><span class="label">Total</span><span class="val" id="b-final">$0.00</span></div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DIALOG -->
+  <div id="confirm-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:2rem;max-width:340px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:#0D3F75;margin-bottom:8px;">Ready to submit?</div>
+      <div style="font-size:14px;color:#6B7691;margin-bottom:1.5rem;">This will save the quote as a PDF to Google Drive.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="confirmSave(false)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #D8DEE8;background:#fff;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;color:#6B7691;cursor:pointer;">No, go back</button>
+        <button onclick="confirmSave(true)"  style="flex:1;padding:10px;border-radius:8px;border:none;background:#1B5EA8;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;color:#fff;cursor:pointer;">Yes, submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card">
+    <div class="result-center">
+      <div class="result-label">Customer Quote</div>
+      <div class="result-total" id="r-total">$0</div>
+    </div>
+    <div class="actions">
+      <button class="btn-copy"  onclick="copyQuote()">Copy Summary</button>
+      <button class="btn-drive" onclick="saveToDrive()">&#9650; Save to Drive</button>
+      <button class="btn-reset" onclick="resetQuote()">Reset</button>
+    </div>
+    <div class="copied-msg" id="copied-msg">Copied to clipboard!</div>
+    <div class="status-msg"  id="status-msg"></div>
+  </div>
+</main>
+
+<footer>
+  Hale's Heating &amp; Cooling &mdash; Internal Use Only &mdash; 706-765-7219 &mdash; Watkinsville, GA
+</footer>
+
+<script>
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4ucCFSjaQRAoINySoe7z4ICFT6eHqLq1FQMansELJnULXjcHqO1BUdKOQsrfQoo3T/exec';
+
+  var parts = [{ name: '', cost: '' }];
+
+  function fmt(n)      { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function fmtRound(n) { return '$' + Math.round(n).toLocaleString(); }
+
+  function renderParts() {
+    var list = document.getElementById('parts-list');
+    list.innerHTML = parts.map(function(p, i) {
+      return '<div class="part-row">'
+        + '<input type="text" placeholder="Part / material description" value="' + p.name + '" oninput="parts[' + i + '].name=this.value;" />'
+        + '<input type="number" placeholder="$0.00" value="' + p.cost + '" min="0" step="0.01" oninput="parts[' + i + '].cost=this.value;calc();" />'
+        + (parts.length > 1 ? '<button class="rm-btn" onclick="removePart(' + i + ')">×</button>' : '<div></div>')
+        + '</div>';
+    }).join('');
+    calc();
+  }
+
+  function addPart()     { parts.push({ name: '', cost: '' }); renderParts(); }
+  function removePart(i) { parts.splice(i, 1); renderParts(); }
+
+  function toggleRefLbs() {
+    var rate = parseFloat(document.getElementById('ref-type').value) || 0;
+    document.getElementById('ref-lbs-row').style.display = rate > 0 ? 'flex' : 'none';
+    var sel = document.getElementById('ref-type');
+    var txt = sel.options[sel.selectedIndex].text.split('—');
+    document.getElementById('ref-rate-label').textContent = txt.length > 1 ? txt[1].trim() : '';
+    calc();
+  }
+
+  function calc() {
+    var techs    = parseFloat(document.getElementById('techs').value) || 1;
+    var laborHrs = parseFloat(document.getElementById('labor-hrs').value) || 0;
+    var refRate  = parseFloat(document.getElementById('ref-type').value) || 0;
+    var refLbs   = parseFloat(document.getElementById('ref-lbs').value) || 0;
+
+    var rawMaterial        = 0;
+    parts.forEach(function(p) { rawMaterial += parseFloat(p.cost) || 0; });
+
+    var materialWithTax    = rawMaterial * 1.08;
+    var materialWithMargin = materialWithTax / 0.7;
+    var laborCost          = techs * laborHrs * 270;
+    var refCost            = refRate * refLbs;
+    var finalPrice         = materialWithMargin + laborCost + refCost;
+
+    document.getElementById('b-material').textContent  = fmt(rawMaterial);
+    document.getElementById('b-tax').textContent       = fmt(materialWithTax);
+    document.getElementById('b-subtotal').textContent  = fmt(materialWithMargin);
+    document.getElementById('b-labor-label').textContent = '+ Labor (' + techs + ' tech' + (techs !== 1 ? 's' : '') + ' \u00d7 ' + laborHrs + ' hr' + (laborHrs !== 1 ? 's' : '') + ' \u00d7 $270)';
+    document.getElementById('b-labor').textContent     = fmt(laborCost);
+    document.getElementById('b-final').textContent     = fmt(finalPrice);
+    document.getElementById('r-total').textContent     = fmtRound(finalPrice);
+
+    var refRow = document.getElementById('b-ref-row');
+    if (refCost > 0) {
+      var sel = document.getElementById('ref-type');
+      var typeLabel = sel.options[sel.selectedIndex].text.split('—')[0].trim();
+      document.getElementById('b-ref-label').textContent = '+ Refrigerant (' + typeLabel + ' \u2014 ' + refLbs + ' lb' + (refLbs !== 1 ? 's' : '') + ' \u00d7 $' + refRate + ')';
+      document.getElementById('b-ref').textContent = fmt(refCost);
+      refRow.style.display = 'flex';
+    } else {
+      refRow.style.display = 'none';
+    }
+  }
+
+  function copyQuote() {
+    var techs      = parseFloat(document.getElementById('techs').value) || 1;
+    var laborHrs   = parseFloat(document.getElementById('labor-hrs').value) || 0;
+    var refRate    = parseFloat(document.getElementById('ref-type').value) || 0;
+    var refLbs     = parseFloat(document.getElementById('ref-lbs').value) || 0;
+    var techName   = document.getElementById('tech-name').value.trim();
+    var jobAddress = document.getElementById('job-address').value.trim();
+    var poNumber   = document.getElementById('po-number').value.trim();
+    var sel        = document.getElementById('ref-type');
+    var dateStr    = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    var rawMaterial        = 0;
+    parts.forEach(function(p) { rawMaterial += parseFloat(p.cost) || 0; });
+    var materialWithTax    = rawMaterial * 1.08;
+    var materialWithMargin = materialWithTax / 0.7;
+    var laborCost          = techs * laborHrs * 270;
+    var refCost            = refRate * refLbs;
+    var finalPrice         = materialWithMargin + laborCost + refCost;
+
+    var txt = "HALE'S HEATING & COOLING — SERVICE QUOTE\nDate: " + dateStr + "\n" + '─'.repeat(40) + "\n";
+    if (techName)   txt += "Technician: " + techName + "\n";
+    if (jobAddress) txt += "Address: " + jobAddress + "\n";
+    if (poNumber)   txt += "PO / Supplier: " + poNumber + "\n";
+    if (techName || jobAddress || poNumber) txt += "\n";
+
+    parts.forEach(function(p) {
+      var c = parseFloat(p.cost) || 0;
+      if (c > 0) txt += (p.name || 'Material') + ': $' + c.toFixed(2) + "\n";
+    });
+
+    txt += "\nMaterial cost:               $" + rawMaterial.toFixed(2) + "\n";
+    txt += "Material + tax (\u00d71.08):      $" + materialWithTax.toFixed(2) + "\n";
+    txt += "Materials with margin (\u00f70.70): $" + materialWithMargin.toFixed(2) + "\n";
+    txt += "Labor (" + techs + " tech" + (techs!==1?'s':'') + " \u00d7 " + laborHrs + " hr" + (laborHrs!==1?'s':'') + " \u00d7 $270): $" + laborCost.toFixed(2) + "\n";
+    if (refCost > 0) txt += "Refrigerant (" + sel.options[sel.selectedIndex].text.split('—')[0].trim() + "): $" + refCost.toFixed(2) + "\n";
+    txt += '─'.repeat(40) + "\nTOTAL: " + fmtRound(finalPrice) + "\n\nHale's Heating & Cooling | 706-765-7219 | Watkinsville, GA\nThis estimate is subject to final diagnosis.\n";
+
+    navigator.clipboard.writeText(txt).then(function() {
+      var el = document.getElementById('copied-msg');
+      el.style.display = 'block';
+      setTimeout(function() { el.style.display = 'none'; }, 2000);
+    });
+  }
+
+  function saveToDrive() {
+    var overlay = document.getElementById('confirm-overlay');
+    overlay.style.display = 'flex';
+  }
+
+  function confirmSave(yes) {
+    var overlay = document.getElementById('confirm-overlay');
+    overlay.style.display = 'none';
+    if (!yes) return;
+    doSaveToDrive();
+  }
+
+  function doSaveToDrive() {
+    var techName   = document.getElementById('tech-name').value.trim();
+    var jobAddress = document.getElementById('job-address').value.trim();
+    var poNumber   = document.getElementById('po-number').value.trim();
+    var total      = document.getElementById('r-total').textContent;
+    var dateStr    = new Date().toISOString().slice(0, 10);
+
+    var now = new Date();
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dd  = String(now.getDate()).padStart(2, '0');
+    var mmm = months[now.getMonth()];
+    var yyyy = now.getFullYear();
+    var datePart = dd + mmm + yyyy;
+
+    var fileparts = [datePart];
+    if (techName)   fileparts.push(techName.replace(/[^a-zA-Z0-9]/g, '_'));
+    if (jobAddress) fileparts.push(jobAddress.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40));
+    var filename = fileparts.join('_') + '.pdf';
+
+    var statusEl = document.getElementById('status-msg');
+    statusEl.className = 'status-msg';
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Generating PDF...';
+
+    try {
+      var doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'letter' });
+      var pageW  = doc.internal.pageSize.getWidth();
+      var margin = 48;
+      var y      = 48;
+
+      // Header bar
+      doc.setFillColor(13, 63, 117);
+      doc.rect(0, 0, pageW, 80, 'F');
+      doc.setFillColor(245, 166, 35);
+      doc.rect(0, 77, pageW, 3, 'F');
+
+      function finishPDF(logoBase64) {
+        // Logo text fallback - draw styled header text since external images are CORS-blocked
+        if (logoBase64) {
+          try { doc.addImage(logoBase64, 'JPEG', margin, 8, 130, 60); } catch(e) {
+            // fallback: text logo
+            doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+            doc.text("Hale's Heating & Cooling", margin, 32);
+            doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 200, 230);
+            doc.text('HVAC EXPERTS — WATKINSVILLE, GA', margin, 46);
+          }
+        } else {
+          doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+          doc.text("Hale's Heating & Cooling", margin, 32);
+          doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 200, 230);
+          doc.text('HVAC EXPERTS — WATKINSVILLE, GA', margin, 46);
+        }
+
+        doc.setTextColor(180, 200, 230);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('SERVICE QUOTE  —  ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), pageW - margin, 50, { align: 'right' });
+
+        y = 100;
+
+        // Job info — plain text, no box
+        var infoLines = [];
+        if (techName)   infoLines.push({ label: 'Technician:', value: techName });
+        if (jobAddress) infoLines.push({ label: 'Job Address:', value: jobAddress });
+        if (poNumber)   infoLines.push({ label: 'PO / Supplier:', value: poNumber });
+
+        if (infoLines.length > 0) {
+          infoLines.forEach(function(row) {
+            doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(107, 118, 145);
+            doc.text(row.label, margin, y);
+            doc.setFont('helvetica', 'normal'); doc.setTextColor(26, 32, 48);
+            doc.text(row.value, margin + 90, y);
+            y += 18;
+          });
+          y += 10;
+        }
+
+      // Section heading helper
+      function sectionHead(label) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(27, 94, 168);
+        doc.text(label.toUpperCase(), margin, y);
+        doc.setDrawColor(216, 222, 232);
+        doc.line(margin + doc.getTextWidth(label.toUpperCase()) + 6, y - 1, pageW - margin, y - 1);
+        y += 14;
+      }
+
+      // Table row helper
+      function tableRow(left, right, muted) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(muted ? 107 : 26, muted ? 118 : 32, muted ? 145 : 48);
+        doc.text(left, margin, y);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(26, 32, 48);
+        doc.text(right, pageW - margin, y, { align: 'right' });
+        y += 18;
+      }
+
+      // Materials
+      var hasMaterials = parts.some(function(p) { return parseFloat(p.cost) > 0; });
+      if (hasMaterials) {
+        sectionHead('Materials');
+        parts.forEach(function(p) {
+          var c = parseFloat(p.cost) || 0;
+          if (c > 0) tableRow(p.name || 'Material', '$' + c.toFixed(2), false);
+        });
+        y += 8;
+      }
+
+      // Breakdown
+      sectionHead('Breakdown');
+      tableRow('Material cost', document.getElementById('b-material').textContent, true);
+      tableRow('+ Tax (\u00d7 1.08)', document.getElementById('b-tax').textContent, true);
+      tableRow('Materials with margin (\u00f7 0.70)', document.getElementById('b-subtotal').textContent, true);
+      tableRow(document.getElementById('b-labor-label').textContent, document.getElementById('b-labor').textContent, true);
+
+      var refRow = document.getElementById('b-ref-row');
+      if (refRow.style.display !== 'none') {
+        tableRow(document.getElementById('b-ref-label').textContent, document.getElementById('b-ref').textContent, true);
+      }
+
+      y += 8;
+
+      // Total box
+      doc.setFillColor(13, 63, 117);
+      doc.roundedRect(margin, y, pageW - margin * 2, 56, 8, 8, 'F');
+      doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 200, 230);
+      doc.text('TOTAL QUOTE', margin + 20, y + 22);
+      doc.setFontSize(28); doc.setFont('helvetica', 'bold'); doc.setTextColor(245, 166, 35);
+      doc.text(total, pageW - margin - 20, y + 38, { align: 'right' });
+      y += 72;
+
+      // Footer
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(150, 150, 150);
+      doc.text("Hale's Heating & Cooling  \u2022  706-765-7219  \u2022  Watkinsville, GA  \u2022  This estimate is subject to final diagnosis.", pageW / 2, y, { align: 'center' });
+
+        var base64 = doc.output('datauristring').split(',')[1];
+
+        if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+          statusEl.className = 'status-msg error';
+          statusEl.textContent = 'Add your Apps Script URL to the widget first.';
+          return;
+        }
+
+        statusEl.textContent = 'Uploading to Drive...';
+
+        var techs2    = parseFloat(document.getElementById('techs').value) || 1;
+        var laborHrs2 = parseFloat(document.getElementById('labor-hrs').value) || 0;
+        var refRate2  = parseFloat(document.getElementById('ref-type').value) || 0;
+        var refLbs2   = parseFloat(document.getElementById('ref-lbs').value) || 0;
+        var sel2      = document.getElementById('ref-type');
+        var refType2  = refRate2 > 0 ? sel2.options[sel2.selectedIndex].text.split('—')[0].trim() : '';
+        var rawMat2   = 0;
+        parts.forEach(function(p) { rawMat2 += parseFloat(p.cost) || 0; });
+        var matTax2   = rawMat2 * 1.08;
+        var matMarg2  = matTax2 / 0.7;
+        var labor2    = techs2 * laborHrs2 * 270;
+        var ref2      = refRate2 * refLbs2;
+        var finalPrice2 = matMarg2 + labor2 + ref2;
+        var partsSummary = parts.filter(function(p){ return parseFloat(p.cost) > 0; })
+          .map(function(p){ return (p.name || 'Material') + ' ($' + parseFloat(p.cost).toFixed(2) + ')'; })
+          .join(', ');
+
+        var sheetRow = {
+          date:             new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          technician:       techName,
+          address:          jobAddress,
+          po:               poNumber,
+          parts:            partsSummary,
+          materialCost:     rawMat2.toFixed(2),
+          materialWithTax:  matTax2.toFixed(2),
+          materialWithMargin: matMarg2.toFixed(2),
+          laborTechs:       techs2,
+          laborHrs:         laborHrs2,
+          laborCost:        labor2.toFixed(2),
+          refrigerantType:  refType2,
+          refrigerantLbs:   refLbs2,
+          refrigerantCost:  ref2.toFixed(2),
+          total:            Math.round(finalPrice2),
+          filename:         filename
+        };
+
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ filename: filename, pdf: base64, sheetRow: sheetRow })
+        })
+        .then(function(resp) { return resp.json(); })
+        .then(function(result) {
+          if (result.status === 'ok') {
+            statusEl.className = 'status-msg success';
+            statusEl.textContent = 'Saved to Google Drive!';
+          } else {
+            throw new Error(result.message || 'Unknown error');
+          }
+          setTimeout(function() { statusEl.style.display = 'none'; }, 4000);
+        })
+        .catch(function(err) {
+          console.error('Upload error:', err);
+          statusEl.className = 'status-msg error';
+          statusEl.textContent = 'Upload failed. Check your Apps Script URL.';
+          setTimeout(function() { statusEl.style.display = 'none'; }, 4000);
+        });
+      } // end finishPDF
+
+      // Try to load logo from page's img tag (already loaded in browser, no CORS issue)
+      var pageLogoImg = document.querySelector('header img');
+      if (pageLogoImg && pageLogoImg.complete && pageLogoImg.naturalWidth > 0) {
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width  = pageLogoImg.naturalWidth;
+          canvas.height = pageLogoImg.naturalHeight;
+          canvas.getContext('2d').drawImage(pageLogoImg, 0, 0);
+          finishPDF(canvas.toDataURL('image/jpeg'));
+        } catch(e) {
+          finishPDF(null);
+        }
+      } else {
+        finishPDF(null);
+      }
+
+    } catch(e) {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = 'PDF generation failed: ' + e.message;
+      setTimeout(function() { statusEl.style.display = 'none'; }, 5000);
+    }
+  }
+
+  function resetQuote() {
+    parts = [{ name: '', cost: '' }];
+    document.getElementById('tech-name').value   = '';
+    document.getElementById('job-address').value = '';
+    document.getElementById('po-number').value   = '';
+    document.getElementById('techs').value       = 1;
+    document.getElementById('labor-hrs').value   = 1;
+    document.getElementById('ref-type').value    = 0;
+    document.getElementById('ref-lbs').value     = 1;
+    document.getElementById('ref-lbs-row').style.display = 'none';
+    renderParts();
+  }
+
+  renderParts();
+</script>
+</body>
+</html>
